@@ -261,8 +261,8 @@ def command_line():
 
     parser = argparse.ArgumentParser(description="Control an MKS etherCAT MFC "
                                      "from the command line.")
-    parser.add_argument('position', nargs='?', default=0, help="The etherCAT "
-                        "address of the mass flow controller.")
+    parser.add_argument('position', nargs='?', default=0, type=int,
+                        help="The etherCAT address of the flow controller.")
     parser.add_argument('--set', '-s', default=None, type=float, help="Sets "
                         "the setpoint flow of the mass flow controller, in "
                         "units specified in the manual.")
