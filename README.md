@@ -1,8 +1,6 @@
 mks
 ===
 
-#####This driver is under heavy development. Use with caution.
-
 Python driver and command-line tool for [MKS EtherCAT mass flow controllers](http://www.mksinst.com/product/category.aspx?CategoryID=406).
 
 <p align="center">
@@ -13,10 +11,16 @@ Installation
 ============
 
 ```
-pip install git+https://github.com/numat/mks
+pip install mks
 ```
 
-When the driver is more stable, we will release on PyPI.
+If you don't like pip, you can also install from source:
+
+```
+git clone https://github.com/numat/mks.git
+cd mks
+python setup.py install
+```
 
 Usage
 =====
