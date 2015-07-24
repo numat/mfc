@@ -1,4 +1,4 @@
-mks
+mfc
 ===
 
 Python driver and command-line tool for [MKS EtherCAT mass flow controllers](http://www.mksinst.com/product/category.aspx?CategoryID=406).
@@ -11,14 +11,14 @@ Installation
 ============
 
 ```
-pip install mks
+pip install mfc
 ```
 
 If you don't like pip, you can also install from source:
 
 ```
-git clone https://github.com/numat/mks.git
-cd mks
+git clone https://github.com/numat/mfc.git
+cd mfc
 python setup.py install
 ```
 
@@ -31,7 +31,7 @@ To test your connection and stream real-time data, use the command-line
 interface. You can read the flow rate with:
 
 ```
-$ mks
+$ mfc
 {
   "flow": 0.1,
   "setpoint": 0.1
@@ -41,14 +41,14 @@ $ mks
 You can optionally specify an etherCAT position (default 0), and a setpoint flow.
 
 ```
-$ mks 2 --set 1
+$ mfc 2 --set 1
 {
   "flow": 0.1,
   "setpoint": 1
 }
 ```
 
-See `mks --help` for more.
+See `mfc --help` for more.
 
 ###Python (Asynchronous)
 
@@ -57,7 +57,7 @@ handle responses as they trickle in. For more information, read through
 [krondo's twisted introduction](http://krondo.com/?page_id=1327).
 
 ```python
-from mks import FlowController
+from mfc import FlowController
 from tornado.ioloop import IOLoop, PeriodicCallback
 
 def on_response(response):

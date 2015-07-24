@@ -1,15 +1,15 @@
 from setuptools import setup
 
 setup(
-    name="mks",
+    name="mfc",
     version="0.1.1",
     description="Python driver for MKS EtherCAT mass flow controllers.",
-    url="http://github.com/numat/mks/",
+    url="http://github.com/numat/mfc/",
     author="Patrick Fuller",
     author_email="pat@numat-tech.com",
-    packages=['mks'],
+    packages=['mfc'],
     entry_points={
-        'console_scripts': [('mks = mks:command_line')]
+        'console_scripts': [('mfc = mfc:command_line')]
     },
     license='GPLv2',
     classifiers=[
