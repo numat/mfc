@@ -78,17 +78,24 @@ This looks more complex, but the advantages are well worth it at scale.
 Essentially, sleeping is replaced by scheduling functions with tornado. This
 allows your code to do other things while waiting for responses.
 
-Extra Resources
-===============
+Other Tools
+===========
+
+#### Wireshark
+
+[Wireshark](https://www.wireshark.org/) is a packet analyzer that comes with
+[built-in etherCAT support](https://wiki.wireshark.org/Protocols/ethercat).
+Use this to view etherCAT packets as they traverse your network.
+
+#### IgH EtherCAT Master
 
 [IgH EtherCAT Master](http://www.etherlab.org/en/ethercat/) is a fully featured
 etherCAT tool, and can be used to debug new devices. It's not required for this
-driver to function, but it'll help if you're having problems. However, it's a
-pain to install.
+driver to function, but it'll help if you're having problems.
 
-If you want to install, ctlone the repo (the mercurial repo *may* be down), install
-[this patch](http://lists.etherlab.org/pipermail/etherlab-dev/2014/000435.html),
-build, and register an ethernet port for use.
+However, it's a pain to install. Clone the repo (it's on sourceforge, which is
+currently down), install [this patch](http://lists.etherlab.org/pipermail/etherlab-dev/2014/000435.html),
+build, insert kernel mods, and register an ethernet port for use.
 
 ```
 hg clone http://hg.code.sf.net/p/etherlabmaster/code ethercat-hg
@@ -113,4 +120,4 @@ ethercat --help
 ethercat pdos
 ```
 
-It requires kernel headers, and won't install readily on e.g. raspberry pis.
+It requires kernel headers, which don't come by default on some linux distros (e.g. raspbian).
