@@ -56,17 +56,17 @@ class FlowController(object):
         This method calls `get_flow` and `get_setpoint` in tandem. If you
         only need one of the two values, use these methods instead.
         """
-        def flow_callback(response):
+        def actual_callback(response):
             """After flow is retrieved, call `get_setpoint`."""
             self.get_setpoint(lambda r: setpoint_callback(r, response))
 
-        def setpoint_callback(setpoint, flow):
+        def setpoint_callback(setpoint, actual):
             """After setpoint is retrieved, fire user's callback."""
-            callback({'flow': flow, 'setpoint': setpoint}, *args, **kwargs)
+            callback({'actual': actual, 'setpoint': setpoint}, *args, **kwargs)
 
-        self.get_flow(flow_callback)
+        self.get_actual(actual_callback)
 
-    def get_flow(self, callback, *args, **kwargs):
+    def get_actual(self, callback, *args, **kwargs):
         """Gets the current flow rate."""
         self._handle_communication('6000', '01', self.upload,
                                    callback, *args, **kwargs)

@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="mfc",
-    version="0.1.1",
+    version="0.1.2",
     description="Python driver for MKS EtherCAT mass flow controllers.",
     url="http://github.com/numat/mfc/",
     author="Patrick Fuller",

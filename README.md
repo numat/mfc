@@ -33,7 +33,7 @@ interface. You can read the flow rate with:
 ```
 $ mfc
 {
-  "flow": 0.1,
+  "actual": 0.1,
   "setpoint": 0.1
 }
 ```
@@ -43,7 +43,7 @@ You can optionally specify an etherCAT position (default 0), and a setpoint flow
 ```
 $ mfc 2 --set 1
 {
-  "flow": 0.1,
+  "actual": 0.1,
   "setpoint": 1
 }
 ```
