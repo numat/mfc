@@ -50,7 +50,7 @@ class FlowController(object):
         self.setting_flow = False
         self.ioloop = tornado.ioloop.IOLoop.current()
 
-    def get(self, callback):
+    def get(self, callback, *args, **kwargs):
         """Returns the setpoint and actual flow rates as a dictionary.
 
         This method calls `get_flow` and `get_setpoint` in tandem. If you
@@ -62,17 +62,19 @@ class FlowController(object):
 
         def setpoint_callback(setpoint, flow):
             """After setpoint is retrieved, fire user's callback."""
-            callback({'flow': flow, 'setpoint': setpoint})
+            callback({'flow': flow, 'setpoint': setpoint}, *args, **kwargs)
 
         self.get_flow(flow_callback)
 
-    def get_flow(self, callback):
+    def get_flow(self, callback, *args, **kwargs):
         """Gets the current flow rate."""
-        self._handle_communication('6000', '01', self.upload, callback)
+        self._handle_communication('6000', '01', self.upload,
+                                   callback, *args, **kwargs)
 
-    def get_setpoint(self, callback):
+    def get_setpoint(self, callback, *args, **kwargs):
         """Gets the setpoint flow rate."""
-        self._handle_communication('7003', '01', self.upload, callback)
+        self._handle_communication('7003', '01', self.upload,
+                                   callback, *args, **kwargs)
 
     def set(self, setpoint, retries=3):
         """Sets the setpoint flow rate.
@@ -99,7 +101,8 @@ class FlowController(object):
         self._handle_communication('7003', '01', self.download,
                                    on_setpoint, data=setpoint)
 
-    def _handle_communication(self, pdo, size, command, callback, data=None):
+    def _handle_communication(self, pdo, size, command, callback, data=None,
+                              *args, **kwargs):
         """Communicates with the EtherCAT device to retrieve data.
 
         This is the bulk of the driver, and was thrown together by reverse
@@ -198,9 +201,10 @@ class FlowController(object):
             if received_pdo != pdo:
                 send_data_request()
             elif command == self.upload:
-                callback(struct.unpack('!f', bytes(result[52:56][::-1]))[0])
+                callback(struct.unpack('!f', bytes(result[52:56][::-1]))[0],
+                         *args, **kwargs)
             elif command == self.download:
-                callback()
+                callback(*args, **kwargs)
 
         send_preparation_request()
 
