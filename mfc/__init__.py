@@ -5,6 +5,7 @@ A Python driver for MKS flow controllers.
 Distributed under the GNU General Public License v2
 Copyright (C) 2015 NuMat Technologies
 """
+from binascii import unhexlify
 from struct import unpack
 import xml.etree.ElementTree as ET
 
@@ -99,7 +100,7 @@ class FlowController(object):
         for item in tree.findall('V'):
             evid, value = item.get("Name"), item.text
             key = next(k for k, v in self.evids.items() if v == evid)
-            state[key] = unpack('!f', bytes.fromhex(value[2:]))[0]
+            state[key] = unpack('!f', unhexlify(value[2:]))[0]
         return state
 
 
