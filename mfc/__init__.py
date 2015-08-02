@@ -56,7 +56,7 @@ class FlowController(object):
             elif retries > 0:
                 self.get(callback, retries=retries-1)
             else:
-                raise IOError("Could not read from MFC.")
+                callback({'connected': False, 'ip': self.ip})
 
         ids = ('<V Name="{}"/>'.format(self.evids[f]) for f in self.fields)
         body = '<PollRequest>{}</PollRequest>'.format(''.join(ids))
