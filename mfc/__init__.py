@@ -25,22 +25,29 @@ class FlowController(object):
              'temp comp flow': 'EVID_5',  # V
              'counter': 'EVID_8'}
 
-    def __init__(self, address='192.168.1.100'):
+    def __init__(self, address, needs_enabling=False):
         """Saves IP address and checks for live connection.
 
         Args:
             address: The IP address of the device, as a string.
-                Default '192.168.1.100'.
+            needs_enabling: (Optional) If True, sets relevant device flags
+                on startup. Necessary on e.g. piMFC.
         """
         self.ip = address
         self.address = 'http://{}/ToolWeb/Cmd'.format(address)
         self.setpoint_address = 'http://{}/flow_setpoint_html'.format(address)
+        self.display_address = 'http://{}/change_display_mode'.format(address)
+        self.login_address = 'http://{}/configure_html_check'.format(address)
         self.headers = {'Content-Type': 'text/xml'}
 
         # There's no documented method to change requested data, but it can be
         # done with e.g. `flow_controller.fields.append('counter')`.
         self.fields = ['actual', 'setpoint', 'temperature']
         self.client = AsyncHTTPClient()
+
+        if needs_enabling:
+            self._enable_digital()
+            self.set_display('flow')
 
     def get(self, callback, retries=3):
         """Retrieves the current state of the device through ToolWeb.
@@ -91,6 +98,43 @@ class FlowController(object):
         request = HTTPRequest(self.setpoint_address, 'POST', body=body)
         self.client.fetch(request, on_response)
 
+    def set_display(self, mode, callback=None, password='config', retries=3):
+        """If a device option, sets the display mode.
+
+        Args:
+            mode: One of 'ip', 'flow', or 'temperature'.
+            callback: (Optional) If specified, will run after display is set.
+                No arguments are passed.
+            password: (Optional) Password used to enter configuration mode.
+                Default 'config'.
+            retries: (Optional) Number of communication reattempts. Default 3.
+        """
+        def on_login_response(response):
+            if response.body:
+                mode_index = ['ip', 'flow', 'temperature'].index(mode.lower())
+                body = 'DISPLAY_MODE={:d}&SUBMIT=Submit'.format(mode_index)
+                request = HTTPRequest(self.display_address, 'POST', body=body)
+                self.client.fetch(request, on_display_response)
+            else:
+                if retries > 0:
+                    self.set_display(mode, retries=retries-1)
+                else:
+                    raise IOError("Could not log in to MFC config mode.")
+
+        def on_display_response(response):
+            if response.body:
+                if callback:
+                    callback()
+            else:
+                if retries > 0:
+                    self.set_display(mode, retries=retries-1)
+                else:
+                    raise IOError("Could not set MFC display mode.")
+
+        body = 'CONFIG_PASSWORD={}&SUBMIT=Change+Settings'.format(password)
+        request = HTTPRequest(self.login_address, 'POST', body=body)
+        self.client.fetch(request, on_login_response)
+
     def _process(self, response):
         """Converts XML response string into a simplified dictionary."""
         if response.error:
@@ -103,6 +147,22 @@ class FlowController(object):
             state[key] = unpack('!f', unhexlify(value[2:]))[0]
         return state
 
+    def _enable_digital(self, callback=None, retries=3):
+        """Enables digital setpoints on analog controllers. Run on start."""
+        def on_response(response):
+            if response.body:
+                if callback:
+                    callback()
+            else:
+                if retries > 0:
+                    self._enable_digital(retries=retries-1)
+                else:
+                    raise IOError("Could not set analog MFC mode.")
+
+        body = 'mfc.sp_adc_enable=0'
+        request = HTTPRequest(self.setpoint_address, 'POST', body=body)
+        self.client.fetch(request, on_response)
+
 
 def command_line():
     import argparse
@@ -113,15 +173,17 @@ def command_line():
 
     parser = argparse.ArgumentParser(description="Control an MKS MFC from "
                                      "the command line.")
-    parser.add_argument('address', nargs='?', default='192.168.1.100',
-                        help="The IP address of the MFC. Default "
-                             "'192.168.1.100'.")
+    parser.add_argument('address', help="The IP address of the MFC")
     parser.add_argument('--set', '-s', default=None, type=float, help="Sets "
                         "the setpoint flow of the mass flow controller, in "
                         "units specified in the manual (likely sccm).")
+    parser.add_argument('--needs-enabling', '-e', action='store_true',
+                        help="Sets relevant device flags on startup. "
+                        "Necessary for setpoint control on e.g. piMFC, and "
+                        "only needs to be run once after device is powered.")
     args = parser.parse_args()
 
-    controller = FlowController(args.address)
+    controller = FlowController(args.address, args.needs_enabling)
     ioloop = IOLoop.current()
 
     def print_flows(flows):
