@@ -25,16 +25,14 @@ class FlowController(object):
              'temp comp flow': 'EVID_5',  # V
              'counter': 'EVID_8'}
 
-    def __init__(self, address, needs_enabling=False):
+    def __init__(self, address):
         """Saves IP address and checks for live connection.
 
         Args:
             address: The IP address of the device, as a string.
-            needs_enabling: (Optional) If True, sets relevant device flags
-                on startup. Necessary on e.g. piMFC.
         """
         self.ip = address
-        self.address = 'http://{}/ToolWeb/Cmd'.format(address)
+        self.toolweb_address = 'http://{}/ToolWeb/Cmd'.format(address)
         self.setpoint_address = 'http://{}/flow_setpoint_html'.format(address)
         self.display_address = 'http://{}/change_display_mode'.format(address)
         self.login_address = 'http://{}/configure_html_check'.format(address)
@@ -45,9 +43,16 @@ class FlowController(object):
         self.fields = ['actual', 'setpoint', 'temperature']
         self.client = AsyncHTTPClient()
 
-        if needs_enabling:
-            self._enable_digital()
-            self.set_display('flow')
+        # Analog controllers (like the piMFC) need to be digitally enabled
+        # for flow setting to work
+        def on_analog_check(is_analog):
+            self.is_analog = is_analog
+            if is_analog:
+                self._enable_digital()
+                self.set_display('flow')
+
+        self.is_analog = False
+        self._check_if_analog(on_analog_check)
 
     def get(self, callback, retries=3):
         """Retrieves the current state of the device through ToolWeb.
@@ -67,7 +72,7 @@ class FlowController(object):
 
         ids = ('<V Name="{}"/>'.format(self.evids[f]) for f in self.fields)
         body = '<PollRequest>{}</PollRequest>'.format(''.join(ids))
-        request = HTTPRequest(self.address, 'POST', body=body,
+        request = HTTPRequest(self.toolweb_address, 'POST', body=body,
                               headers=self.headers)
         self.client.fetch(request, on_response)
 
@@ -84,7 +89,7 @@ class FlowController(object):
                 No arguments are passed.
             retries: (Optional) Number of communication reattempts. Default 3.
         """
-        def on_response(response):
+        def on_setpoint_response(response):
             if response.body:
                 self.setpoint = setpoint
                 if callback:
@@ -94,9 +99,15 @@ class FlowController(object):
             else:
                 raise IOError("Could not set MFC flow rate.")
 
-        body = 'iobuf.setpoint={:.2f}&SUBMIT=Submit'.format(setpoint)
-        request = HTTPRequest(self.setpoint_address, 'POST', body=body)
-        self.client.fetch(request, on_response)
+        def set_setpoint():
+            body = 'iobuf.setpoint={:.2f}&SUBMIT=Submit'.format(setpoint)
+            request = HTTPRequest(self.setpoint_address, 'POST', body=body)
+            self.client.fetch(request, on_setpoint_response)
+
+        if self.is_analog:
+            self._enable_digital(set_setpoint)
+        else:
+            set_setpoint()
 
     def set_display(self, mode, callback=None, password='config', retries=3):
         """If a device option, sets the display mode.
@@ -147,6 +158,25 @@ class FlowController(object):
             state[key] = unpack('!f', unhexlify(value[2:]))[0]
         return state
 
+    def _check_if_analog(self, callback, retries=3):
+        """Checks if digital control enabling is required.
+
+        Analog controllers (e.g. PiMFC) take analog input over digital by
+        default. This prevents the driver from setting flow rates. We must
+        enable digital override on start, and again on every controller reboot.
+        """
+        def on_response(response):
+            if response.body:
+                callback('mfc.sp_adc_enable' in str(response.body))
+            else:
+                if retries > 0:
+                    self._check_if_analog(retries=retries-1)
+                else:
+                    raise IOError("Could not get controller information.")
+
+        request = HTTPRequest('http://{}/mfc.js'.format(self.ip))
+        self.client.fetch(request, on_response)
+
     def _enable_digital(self, callback=None, retries=3):
         """Enables digital setpoints on analog controllers. Run on start."""
         def on_response(response):
@@ -177,13 +207,9 @@ def command_line():
     parser.add_argument('--set', '-s', default=None, type=float, help="Sets "
                         "the setpoint flow of the mass flow controller, in "
                         "units specified in the manual (likely sccm).")
-    parser.add_argument('--needs-enabling', '-e', action='store_true',
-                        help="Sets relevant device flags on startup. "
-                        "Necessary for setpoint control on e.g. piMFC, and "
-                        "only needs to be run once after device is powered.")
     args = parser.parse_args()
 
-    controller = FlowController(args.address, args.needs_enabling)
+    controller = FlowController(args.address)
     ioloop = IOLoop.current()
 
     def print_flows(flows):
