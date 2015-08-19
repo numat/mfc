@@ -38,15 +38,16 @@ $ mfc 192.168.1.200
 {
   "actual": 4.99,
   "connected": true,
+  "gas": "CO2",
   "ip": "192.168.1.200",
+  "max": 37,
   "setpoint": 5.00,
   "temperature": 27.34
 }
-
 ```
 
-You can optionally specify a setpoint flow with e.g. `mfc 192.168.1.150 --set 7.5`.
-See `mfc --help` for more.
+You can optionally specify a setpoint flow and gas with e.g.
+`mfc 192.168.1.150 --set 7.5 --set-gas O2`. See `mfc --help` for more.
 
 ###Python (Asynchronous)
 
