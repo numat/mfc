@@ -250,7 +250,7 @@ class FlowController(object):
 
         This method adds some internal variables to the output.
         """
-        if response.error:
+        if response.error or not response.body:
             return {'connected': False, 'ip': self.ip}
         state = {'connected': True, 'ip': self.ip}
         tree = ET.fromstring(response.body)

@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="mfc",
-    version="0.2.4",
+    version="0.2.5",
     description="Python driver for MKS mass flow controllers.",
     url="http://github.com/numat/mfc/",
     author="Patrick Fuller",
