@@ -55,6 +55,7 @@ class FlowController(object):
         self._check_if_analog(on_analog_check)
 
         # Retrieves data on available gas options. Fires callback on complete.
+        self.max_flow, self.selected_gas = None, None
         self._get_gas_instances(partial(self._get_selected_gas, callback))
 
     def get(self, callback, retries=3):
