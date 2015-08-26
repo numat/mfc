@@ -69,6 +69,9 @@ class FlowController(object):
         def on_response(response):
             if response.body:
                 callback(self._process(response))
+                if self.max_flow is None:
+                    self._get_selected_gas()
+                    self._get_gas_instances()
             elif retries > 0:
                 self.get(callback, retries=retries-1)
             else:
