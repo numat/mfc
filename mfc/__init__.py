@@ -47,12 +47,8 @@ class FlowController(object):
 
         # Analog controllers (like the piMFC) need to be digitally enabled
         # for flow setting to work.
-        def on_analog_check(is_analog):
-            self.is_analog = is_analog
-            if is_analog:
-                self._enable_digital()
-                self.set_display('flow')
-        self._check_if_analog(on_analog_check)
+        self.is_analog = False
+        self._check_if_analog()
 
         # Retrieves data on available gas options. Fires callback on complete.
         self.max_flow, self.selected_gas = None, None
@@ -72,6 +68,7 @@ class FlowController(object):
                 if self.max_flow is None:
                     self._get_selected_gas()
                     self._get_gas_instances()
+                    self._check_if_analog()
             elif retries > 0:
                 self.get(callback, retries=retries-1)
             else:
@@ -268,7 +265,7 @@ class FlowController(object):
 
         return state
 
-    def _check_if_analog(self, callback, retries=3):
+    def _check_if_analog(self, callback=None, retries=3):
         """Checks if digital control enabling is required.
 
         Analog controllers (e.g. PiMFC) take analog input over digital by
@@ -277,7 +274,12 @@ class FlowController(object):
         """
         def on_response(response):
             if response.body:
-                callback('mfc.sp_adc_enable' in str(response.body))
+                self.is_analog = ('mfc.sp_adc_enable' in str(response.body))
+                if self.is_analog:
+                    self._enable_digital()
+                    self.set_display('flow')
+                if callback:
+                    callback()
             elif retries > 0:
                 self._check_if_analog(callback, retries=retries-1)
             else:
