@@ -47,7 +47,7 @@ class FlowController(object):
 
         # Analog controllers (like the piMFC) need to be digitally enabled
         # for flow setting to work.
-        self.is_analog = False
+        self.is_analog, self.analog_setpoint = False, 0
         self._check_if_analog()
 
         # Retrieves data on available gas options. Fires callback on complete.
@@ -64,11 +64,17 @@ class FlowController(object):
         """
         def on_response(response):
             if response.body:
-                callback(self._process(response))
+                parsed = self._process(response)
+                # Analog mfcs zero their setpoints if not occasionally reset
+                if (self.is_analog and
+                        abs(parsed['setpoint'] - self.analog_setpoint) > 1e-3):
+                    self.set(self.analog_setpoint)
+                # Redundant data check if the constructor fails
                 if self.max_flow is None:
                     self._get_selected_gas()
                     self._get_gas_instances()
                     self._check_if_analog()
+                callback(parsed)
             elif retries > 0:
                 self.get(callback, retries=retries-1)
             else:
@@ -114,6 +120,7 @@ class FlowController(object):
                              .format(self.max_flow))
 
         if self.is_analog:
+            self.analog_setpoint = setpoint
             self._enable_digital(set_setpoint)
         else:
             set_setpoint()
