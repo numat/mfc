@@ -31,7 +31,7 @@ class FlowController(object):
              'temp comp flow': 'EVID_5',  # V
              'counter': 'EVID_8'}
 
-    def __init__(self, address, callback=None):
+    def __init__(self, address, callback=None, timeout=3):
         """Saves IP address and checks for live connection.
 
         Args:
@@ -39,6 +39,7 @@ class FlowController(object):
             callback: (Optional) Fires when controller driver is initialized.
         """
         self.ip = address
+        self.timeout = timeout
         self.client = AsyncHTTPClient()
 
         # There's no documented method to change requested data, but it can be
@@ -53,6 +54,18 @@ class FlowController(object):
         # Retrieves data on available gas options. Fires callback on complete.
         self.max_flow, self.selected_gas = None, None
         self._get_gas_instances(partial(self._get_selected_gas, callback))
+
+    def _request(self, extension, body, callback):
+        """Wraps tornado syntax for sending an HTTP request."""
+        request = HTTPRequest('http://{}/{}'.format(self.ip, extension),
+                              connect_timeout=self.timeout,
+                              request_timeout=self.timeout)
+        if body:
+            request.body = body
+            request.method = 'POST'
+        if extension == 'ToolWeb/Cmd':
+            request.headers = {'Content-Type': 'text/xml'}
+        self.client.fetch(request, callback)
 
     def get(self, callback, retries=3):
         """Retrieves the current state of the device through ToolWeb.
@@ -80,12 +93,9 @@ class FlowController(object):
             else:
                 callback({'connected': False, 'ip': self.ip})
 
-        address = 'http://{}/ToolWeb/Cmd'.format(self.ip)
         ids = ('<V Name="{}"/>'.format(self.evids[f]) for f in self.fields)
         body = '<PollRequest>{}</PollRequest>'.format(''.join(ids))
-        request = HTTPRequest(address, 'POST', body=body,
-                              headers={'Content-Type': 'text/xml'})
-        self.client.fetch(request, on_response)
+        self._request('ToolWeb/Cmd', body, on_response)
 
     def set(self, setpoint, callback=None, retries=3):
         """Sets the setpoint flow rate, in sccm.
@@ -110,10 +120,8 @@ class FlowController(object):
                 raise IOError("Could not set MFC flow rate.")
 
         def set_setpoint():
-            address = 'http://{}/flow_setpoint_html'.format(self.ip)
             body = 'iobuf.setpoint={:.2f}&SUBMIT=Submit'.format(setpoint)
-            request = HTTPRequest(address, 'POST', body=body)
-            self.client.fetch(request, on_setpoint_response)
+            self._request('flow_setpoint_html', body, on_setpoint_response)
 
         if setpoint < 0 or setpoint > self.max_flow:
             raise ValueError("Setpoint must be between 0 and {:d} sccm."
@@ -141,11 +149,9 @@ class FlowController(object):
             retries: (Optional) Number of communication reattempts. Default 3.
         """
         def on_login():
-            address = 'http://{}/device_html_selected_gas'.format(self.ip)
             body = 'device_html.selected_gas={}&SUBMIT=Set'.format(
                     quote(self.gases[gas]))
-            request = HTTPRequest(address, 'POST', body=body)
-            self.client.fetch(request, on_response)
+            self._request('device_html_selected_gas', body, on_response)
 
         def on_response(response):
             if response.body:
@@ -175,11 +181,9 @@ class FlowController(object):
             retries: (Optional) Number of communication reattempts. Default 3.
         """
         def on_login():
-            address = 'http://{}/change_display_mode'.format(self.ip)
             mode_index = ['ip', 'flow', 'temperature'].index(mode.lower())
             body = 'DISPLAY_MODE={:d}&SUBMIT=Submit'.format(mode_index)
-            request = HTTPRequest(address, 'POST', body=body)
-            self.client.fetch(request, on_display_response)
+            self._request('change_display_mode', body, on_display_response)
 
         def on_display_response(response):
             if response.body:
@@ -203,10 +207,8 @@ class FlowController(object):
             else:
                 raise IOError("Could not log in to MFC config mode.")
 
-        address = 'http://{}/configure_html_check'.format(self.ip)
         body = 'CONFIG_PASSWORD={}&SUBMIT=Change+Settings'.format(password)
-        request = HTTPRequest(address, 'POST', body=body)
-        self.client.fetch(request, on_login_response)
+        self._request('configure_html_check', body, on_login_response)
 
     def _get_selected_gas(self, callback=None, retries=3):
         """Gets the current specified gas and max flow rate."""
@@ -227,8 +229,7 @@ class FlowController(object):
             else:
                 raise IOError("Could not get selected gas.")
 
-        request = HTTPRequest('http://{}/device_html.js'.format(self.ip))
-        self.client.fetch(request, on_response)
+        self._request('device_html.js', None, on_response)
 
     def _get_gas_instances(self, callback=None, retries=3):
         """Gets the current gas instance configuration."""
@@ -250,8 +251,7 @@ class FlowController(object):
             else:
                 raise IOError("Could not get available gas instances.")
 
-        request = HTTPRequest('http://{}/gaslist.js'.format(self.ip))
-        self.client.fetch(request, on_response)
+        self._request('gaslist.js', None, on_response)
 
     def _process(self, response):
         """Converts XML response string into a simplified dictionary.
@@ -292,8 +292,7 @@ class FlowController(object):
             else:
                 raise IOError("Could not get controller information.")
 
-        request = HTTPRequest('http://{}/mfc.js'.format(self.ip))
-        self.client.fetch(request, on_response)
+        self._request('mfc.js', None, on_response)
 
     def _enable_digital(self, callback=None, retries=3):
         """Enables digital setpoints on analog controllers. Run on start."""
@@ -306,10 +305,8 @@ class FlowController(object):
             else:
                 raise IOError("Could not set analog MFC mode.")
 
-        address = 'http://{}/flow_setpoint_html'.format(self.ip)
         body = 'mfc.sp_adc_enable=0'
-        request = HTTPRequest(address, 'POST', body=body)
-        self.client.fetch(request, on_response)
+        self._request('flow_setpoint_html', body, on_response)
 
 
 def command_line():
