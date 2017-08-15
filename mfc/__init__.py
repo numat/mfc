@@ -133,6 +133,14 @@ class FlowController(object):
         else:
             set_setpoint()
 
+    def open(self):
+        """Sets flow controller to its full-scale value."""
+        self.set(self.max_flow)
+
+    def close(self):
+        """Sets the flow to zero."""
+        self.set(0)
+
     def set_gas(self, gas, callback=None, password='config', retries=3):
         """Sets the gas, affecting flow control range.
 
