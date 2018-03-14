@@ -28,7 +28,7 @@ Usage
 This driver uses the ethernet port *on the side of the device* for communication.
 If you use this driver, you only need to provide power to the top ports.
 
-###Command Line
+### Command Line
 
 To test your connection and stream real-time data, use the command-line
 interface. You can read the flow rate with:
@@ -49,7 +49,7 @@ $ mfc 192.168.1.200
 You can optionally specify a setpoint flow and gas with e.g.
 `mfc 192.168.1.150 --set 7.5 --set-gas O2`. See `mfc --help` for more.
 
-###Python (Asynchronous)
+### Python (Asynchronous)
 
 Asynchronous programming allows us to send out all of our requests in parallel, and
 then handle responses as they trickle in. For more information, read through
