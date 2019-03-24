@@ -1,9 +1,15 @@
+"""Python driver for MKS mass flow controllers."""
 from setuptools import setup
+
+with open('README.md', 'r') as in_file:
+    long_description = in_file.read()
 
 setup(
     name="mfc",
     version="0.2.11",
     description="Python driver for MKS mass flow controllers.",
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     url="http://github.com/numat/mfc/",
     author="Patrick Fuller",
     author_email="pat@numat-tech.com",
