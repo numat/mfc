@@ -10,7 +10,7 @@ with open('README.md', 'r') as in_file:
 
 setup(
     name="mfc",
-    version="0.3.1",
+    version="0.3.2",
     description="Python driver for MKS mass flow controllers.",
     long_description=long_description,
     long_description_content_type='text/markdown',

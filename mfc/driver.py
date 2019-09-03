@@ -1,4 +1,5 @@
-"""A Python driver for MKS flow controllers.
+"""
+Python driver for MKS flow controllers.
 
 Distributed under the GNU General Public License v2
 Copyright (C) 2019 NuMat Technologies
@@ -44,7 +45,10 @@ class FlowController(object):
 
     async def __aenter__(self):
         """Support `async with` by entering a client session."""
-        await self.connect()
+        try:
+            await self.connect()
+        except Exception as e:
+            await self.__aexit__(e)
         return self
 
     async def __aexit__(self, *err):

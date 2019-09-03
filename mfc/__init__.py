@@ -1,9 +1,8 @@
-#!/usr/bin/python
 """
-A Python driver for MKS flow controllers.
+Python driver for MKS flow controllers.
 
 Distributed under the GNU General Public License v2
-Copyright (C) 2015 NuMat Technologies
+Copyright (C) 2019 NuMat Technologies
 """
 from mfc.driver import FlowController
 
@@ -14,6 +13,7 @@ def command_line():
     import asyncio
     import json
     import sys
+    red, reset = '\033[1;31m', '\033[0m'
 
     parser = argparse.ArgumentParser(description="Control an MKS MFC from "
                                      "the command line.")
@@ -34,8 +34,9 @@ def command_line():
                     await fc.set(args.set)
                     await asyncio.sleep(0.1)
                 print(json.dumps(await fc.get(), indent=4, sort_keys=True))
+        except asyncio.TimeoutError:
+            sys.stderr.write(f'{red}Could not connect to device.{reset}\n')
         except Exception as e:
-            red, reset = '\033[1;31m', '\033[0m'
             sys.stderr.write(f'{red}{e}{reset}\n')
 
     loop = asyncio.get_event_loop()
