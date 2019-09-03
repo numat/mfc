@@ -81,5 +81,5 @@ The API that matters is `get`, `set`, and `set_gas`.
 There is also `set_display`, which will only work on devices that support it.
 
 ```python
-await fc.set_display('flow')
+>>> await fc.set_display('flow')
 ```
