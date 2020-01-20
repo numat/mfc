@@ -34,6 +34,7 @@ class FlowController(object):
                 a TimeoutError. Default 1s.
             password (optional): Password used to access admin settings on the
                 web interface. Default "config".
+
         """
         self.address = f"http://{address.lstrip('http://').rstrip('/')}/"
         self.session = None
@@ -107,12 +108,14 @@ class FlowController(object):
 
         Args:
             setpoint: Setpoint flow, as a float, in sccm.
+
         """
         if setpoint < 0 or setpoint > self.max_flow:
             raise ValueError(f"Setpoint must be between 0 and {self.max_flow:d} sccm.")
         if self.is_analog:
             self.analog_setpoint = setpoint
             await self._enable_digital()
+            await self.set_display('flow')
         body = f'iobuf.setpoint={setpoint:.2f}&SUBMIT=Submit'
         await self._request('flow_setpoint_html', body)
 
@@ -133,6 +136,7 @@ class FlowController(object):
 
         Args:
             gas: Gas to set. Must be in `controller.gases.keys()`.
+
         """
         if gas not in self.gases:
             raise ValueError(f"Gas must be in {list(self.gases.keys())}.")
@@ -146,6 +150,7 @@ class FlowController(object):
 
         Args:
             mode: One of 'ip', 'flow', or 'temperature'.
+
         """
         await self._login()
         mode_index = ['ip', 'flow', 'temperature'].index(mode.lower())
@@ -222,12 +227,26 @@ class FlowController(object):
         await self._request('flow_setpoint_html', 'mfc.sp_adc_enable=0')
 
     async def _request(self, endpoint, body=None):
-        """Handle sending an HTTP request."""
+        """Handle sending an HTTP request.
+
+        The headers are important! aiohttp overwrites many Content-Type headers
+        with text/html, and this took me a while to figure out. I ended up
+        debugging with 1. the order tornado implementation, and 2. curl:
+
+        The following command does not work with the bracketed header flag:
+        curl --data 'iobuf.setpoint=1.00&SUBMIT=Submit'
+        [--header "Content-Type: text/html"] http://address/flow_setpoint_html
+
+        curl defaults to application/x-www-form-urlencoded, which appears to
+        work with the mfc.
+
+        """
         if self.session is None:
             await self.connect()
         url = self.address + endpoint
         method = ('POST' if body else 'GET')
-        headers = ({'Content-Type': 'text/xml'} if endpoint == 'ToolWeb/Cmd' else {})
+        headers = {'Content-Type': 'text/xml' if endpoint == 'ToolWeb/Cmd'
+                                   else 'application/x-www-form-urlencoded'}
         async with self.session.request(method, url, headers=headers, data=body) as r:
             response = await r.text()
             if not response or r.status > 200:
