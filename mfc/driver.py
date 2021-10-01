@@ -21,7 +21,7 @@ class FlowController(object):
         'temperature': 'EVID_3'  # °C
     }
 
-    def __init__(self, address, timeout=1, password='config'):
+    def __init__(self, address: str, timeout: float = 1.0, password: str = 'config'):
         """Initialize device.
 
         Note that this constructor does not not connect. This will happen
@@ -38,7 +38,7 @@ class FlowController(object):
         """
         self.address = f"http://{address.lstrip('http://').rstrip('/')}/"
         self.session = None
-        self.timeout = timeout
+        self.Timeout = aiohttp.ClientTimeout(total=timeout)
         self.password = password
         self.analog_setpoint = 0
         ids = ''.join(f'<V Name="{evid}"/>' for evid in self.evids.values())
@@ -73,7 +73,7 @@ class FlowController(object):
         website. After the driver has these instances, a final request figures
         out the currently selected gas.
         """
-        self.session = aiohttp.ClientSession(read_timeout=self.timeout)
+        self.session = aiohttp.ClientSession(timeout=self.Timeout)
         self.is_analog = await self._check_if_analog()
         self.gases = await self._get_gas_instances()
         self.selected_gas, self.max_flow = await self._get_selected_gas()
