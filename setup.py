@@ -10,7 +10,7 @@ with open('README.md', 'r') as in_file:
 
 setup(
     name="mfc",
-    version="0.3.3",
+    version="0.4.0",
     description="Python driver for MKS mass flow controllers.",
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -21,7 +21,7 @@ setup(
     entry_points={
         'console_scripts': [('mfc = mfc:command_line')]
     },
-    install_requires=['aiohttp'],
+    install_requires=['aiohttp>=3.3'],
     license='GPLv2',
     classifiers=[
         'License :: OSI Approved :: GNU General Public License v2 (GPLv2)',
@@ -32,6 +32,8 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Topic :: Scientific/Engineering :: Human Machine Interfaces'
     ]
 )
